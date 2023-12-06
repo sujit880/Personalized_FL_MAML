@@ -69,9 +69,33 @@ class MLP_CIFAR10(nn.Module):
         x = self.activation(x)
 
         return x
+    
+class MNIST_SOLVER(nn.Module):
+    def __init__(self) -> None:
+        super(MNIST_SOLVER, self).__init__()
+        self.fc1 = linear(28*28, 128)
+        self.fc2 = linear(128, 128)
+        self.fc3 = linear(128, 10)
+        self.flatten = nn.Flatten()
+        self.activation = elu()
+
+    def forward(self, x):
+        x = self.flatten(x)
+
+        x = self.fc1(x)
+        x = self.activation(x)
+        
+        x = self.fc2(x)
+        x = self.activation(x)
+
+        x = self.fc3(x)
+        x = self.activation(x)
+
+        return x
 
 
-MODEL_DICT = {"mnist": MLP_MNIST, "cifar": MLP_CIFAR10}
+
+MODEL_DICT = {"mnist": MLP_MNIST, "cifar": MLP_CIFAR10, "nmnist": MLP_MNIST}
 
 
 def get_model(dataset, device):

@@ -11,8 +11,12 @@ def get_args():
     parser.add_argument("--alpha", type=float, default=1e-2)
     parser.add_argument("--beta", type=float, default=1e-3)
     parser.add_argument("--global_epochs", type=int, default=200)
-    parser.add_argument("--local_epochs", type=int, default=4)
-    parser.add_argument("--worker_epochs", type=int, default=2)
+    parser.add_argument("--local_epochs", type=int, default=5)
+    parser.add_argument("--worker_epochs", type=int, default=5)
+    parser.add_argument("--role", type=int, default=None)
+    parser.add_argument("--data_type", type=str, default="iid") #this to select which type of dataset it is
+    parser.add_argument("--n_class", type=int, default=10) #this value represents how many classe are presents in each pickle
+    parser.add_argument("--optm", type=str, choices= ["SGD", "Adam"], default="SGD") # this value is for choosing optimizer between "SGD" and "Adam"
     parser.add_argument(
         "--eval_epochs",
         type=int,
@@ -39,7 +43,7 @@ def get_args():
         help="Proportion of val set in the entire client local dataset",
     )
     parser.add_argument(
-        "--dataset", type=str, choices=["mnist", "cifar"], default="mnist"
+        "--dataset", type=str, choices=["mnist", "cifar", "nmnist"], default="mnist"
     )
     parser.add_argument("--client_num_per_round", type=int, default=10)
     parser.add_argument("--seed", type=int, default=17)
@@ -64,7 +68,7 @@ def eval(
     model: torch.nn.Module,
     dataloader: torch.utils.data.DataLoader,
     criterion: Union[torch.nn.MSELoss, torch.nn.CrossEntropyLoss],
-    device=torch.device("cpu"),
+    device=torch.device("cpu"), show = False
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     model.eval()
     total_loss = 0
@@ -79,6 +83,7 @@ def eval(
         acc += torch.eq(pred, y).int().sum()
         num_samples += y.size(-1)
     model.train()
+    return total_loss, acc / num_samples, pred, y
     return total_loss, acc / num_samples
 
 

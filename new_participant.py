@@ -5,7 +5,7 @@ import utils
 from copy import deepcopy
 from typing import Tuple, Union
 from collections import OrderedDict
-from data.data_utils import get_dataloader
+from data.new_data_utils import get_dataloader, n_get_dataloader
 from fedlab.utils.serialization import SerializationTool
 
 
@@ -26,6 +26,9 @@ class User:
         logger: rich.console.Console,
         gpu: int,
         gpu_option: bool,
+        data_type: str,
+        n_class: int,
+        optm: str,
     ):
         if gpu and torch.cuda.is_available():
             if gpu_option:
@@ -37,7 +40,7 @@ class User:
         else:
             self.device = torch.device("cpu")
         self.logger = logger
-
+        self.n_class = n_class
         self.local_epochs = local_epochs
         self.criterion = criterion
         self.id = user_id
@@ -46,10 +49,16 @@ class User:
         self.lr = lr
         self.alpha = alpha
         self.beta = beta
-        self.trainloader, self.valloader = get_dataloader(
-            dataset, user_id, batch_size, valset_ratio
-        )
-        
+        self.optm = optm
+        print(f'n_per-> dataset: {dataset}')
+        if dataset == "nmnist":
+            self.trainloader, self.valloader = n_get_dataloader(
+            dataset, user_id, data_type, n_class, batch_size, valset_ratio
+            )
+        else:            
+            self.trainloader, self.valloader = get_dataloader(
+                dataset, user_id, n_class, batch_size, valset_ratio
+            )
         self.iter_trainloader = iter(self.trainloader)
 
     def get_data_batch(self):
@@ -210,7 +219,12 @@ class User:
         loss_before, acc_before, pred, target = utils.eval(
             self.model, self.valloader, self.criterion, self.device
         )
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+                
+        if self.optm == "SGD":
+            optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        elif self.optm =="Adam":
+            optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        else: optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
         for _ in range(worker_epochs):
             x, y = self.get_data_batch()
             logit = self.model(x)            
@@ -243,7 +257,6 @@ class User:
             "acc_after": acc_after,
             "training_stats": training_stats,
         }
-        pass
 
     def pers_N_eval(self, global_model: torch.nn.Module, pers_epochs: int):
         self.model.load_state_dict(global_model.state_dict())
@@ -318,11 +331,28 @@ class User:
         if show:
             print(f"Predicted: {pred}, Target: {target}") #Print
             # print(record_stats)
-            for x in pred:
-                if x.item() not in record_stats:
-                    print(f'predicted new class {x.item()}')
-                    record_stats[x.item()] = 0
-                record_stats[x.item()] += 1
+            if "pred" not in record_stats:
+                record_stats["pred"] = {}
+                record_stats["target"] = {}
+                record_stats["match"] = {}
+            for x, y in zip(pred, target):
+                X = x.item()
+                Y = y.item()
+                if X not in record_stats["pred"]:
+                    print(f'predicted new class {X}')
+                    record_stats["pred"][X] = 0
+                record_stats["pred"][X] += 1
+                if Y not in record_stats["target"]:
+                    print(f'predicted new class {Y}')
+                    record_stats["target"][Y] = 0
+                record_stats["target"][Y] += 1
+                if X==Y :
+                    if Y not in record_stats["match"]:
+                        print(f'new matced: {X}, {Y}')
+                        record_stats["match"][Y] = 0
+                    record_stats["match"][Y] += 1
+
+
 
         return loss, acc, record_stats
 

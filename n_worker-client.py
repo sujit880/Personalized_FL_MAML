@@ -13,8 +13,8 @@ from rich.progress import track
 from utils import get_args, fix_random_seed
 from model import get_model
 from participant import User
-from data.data_utils import get_client_id_indices
-from data.data_utils import get_dataset_stat
+from data.new_data_utils import get_client_id_indices
+from data.new_data_utils import get_dataset_stat
 
 ROLE = ['learner', 'worker']
 

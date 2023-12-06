@@ -9,15 +9,17 @@ DATASET_DICT = {
     "cifar": CIFARDataset,
     "nmnist": N_MNISTDataset,
 }
-CURRENT_DIR = Path(__file__).parent.abspath()
+CURRENT_DIR = f'/home/sujit_2021cs35/Github/Personalized_FL_MAML/build_dataset'
 
 
-def get_dataloader(dataset: str, client_id: int, batch_size=20, valset_ratio=0.1):
-    pickles_dir = CURRENT_DIR / dataset / "pickles"
+def get_dataloader(dataset: str, client_id: int, num_classes, batch_size=20, valset_ratio=0.1):
+    pickles_dir = f'{CURRENT_DIR}/{dataset}/{num_classes}'
+    print(f'n_data_utils-> dataset: {dataset}, DATASET_DICT: {DATASET_DICT[dataset]}')
+    print(f'pickles_dir: {pickles_dir}')
     if os.path.isdir(pickles_dir) is False:
         raise RuntimeError("Please preprocess and create pickles first.")
 
-    with open(pickles_dir / str(client_id) + ".pkl", "rb") as f:
+    with open(f'{pickles_dir}/{client_id}.pkl', "rb") as f:
         client_dataset: DATASET_DICT[dataset] = pickle.load(f)
 
     val_num_samples = int(valset_ratio * len(client_dataset))
@@ -31,12 +33,12 @@ def get_dataloader(dataset: str, client_id: int, batch_size=20, valset_ratio=0.1
 
     return trainloader, valloader
 
-def n_get_dataloader(dataset: str, client_id: int, data_type: str, class_type: int, batch_size=20, valset_ratio=0.1):
-    pickles_dir = f'./build_dataset/nmnist/{data_type}/{class_type}'
+def n_get_dataloader(dataset: str, client_id: int, data_type: str, n_class: int, batch_size=20, valset_ratio=0.1):
+    pickles_dir = f'./build_dataset/nmnist/{data_type}/{n_class}'
     if os.path.isdir(pickles_dir) is False:
         raise RuntimeError("Please preprocess and create pickles first.")
 
-    with open(pickles_dir / str(client_id) + ".pkl", "rb") as f:
+    with open(f'{pickles_dir}/{client_id}.pkl', "rb") as f:
         client_dataset: DATASET_DICT[dataset] = pickle.load(f)
 
     val_num_samples = int(valset_ratio * len(client_dataset))
@@ -59,16 +61,17 @@ def get_client_id_indices(dataset):
     return (seperation["train"], seperation["test"], seperation["total"])
 
 
-def get_dataset_stat(dataset):
+def get_dataset_stat(dataset, data_type: str, class_type: int):
     #calculating datasets stat
-    pickles_dir = CURRENT_DIR  / dataset / "pickles"
+    pickles_dir = f'{CURRENT_DIR}/{dataset}/{data_type}/{class_type}'
     DATASET_DICT = {
         "mnist": MNISTDataset,
         "cifar": CIFARDataset,
+        "nmnist": N_MNISTDataset,
     }
     dataset_stats = {}
     for i in range(200):
-        with open(pickles_dir / str(i) + ".pkl", "rb") as f:
+        with open(f'{pickles_dir}/{i}.pkl', "rb") as f:
             client_dataset: DATASET_DICT[dataset] = pickle.load(f)
             if i not in dataset_stats:
                 dataset_stats[i]={}
